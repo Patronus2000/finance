@@ -356,36 +356,35 @@ def sell():
 @ login_required
 def wishlist(symbol):
     print(symbol)
-    if request.method == "GET":
-        return render_template("wishlist.html")
-    else:
-        # # query database with the transactions history
-        # rows = db.engine.execute("Insert symbol, amount FROM stocks WHERE user_id = %s",
-        #                             session["user_id"])
+    if request.method == "POST":
+        # check if record exists
+        rows = db.engine.execute("SELECT * FROM wishlist WHERE user_id = %s AND symbol = %s",
+                                 session["user_id"], symbol)
+        c = 0
+        for row in rows:
+            c = c+1
+        if c == 0:
+            db.engine.execute("INSERT INTO wishlist(user_id,symbol) VALUES (%s, %s)",
+                              session["user_id"], symbol)
+            flash("Added to wishlist!")
+            return redirect("/wishlist")
+        else:
+            flash("Already in wishlist!")
+            return redirect("/wishlist")
 
-        return render_template("wishlisted.html", stock=stock)
 
-
-@app.route("/wishlisted", methods=["GET"])
+@app.route("/wishlist", methods=["GET"])
 @login_required
 def wishlisted():
-    # Histroy of transactions
-    rows = db.engine.execute(
-        "SELECT * FROM transactions WHERE user_id = %s", (session["user_id"]))
-
-    # pass a list of lists to the template page, template is going to iterate it to extract the data into a table
-    transactions = []
+   # select from wishlist
+    rows = db.engine.execute("SELECT s.* FROM stock_price s inner join wishlist w on s.symbol = w.symbol  WHERE w.user_id = %s",
+                             session["user_id"])
+    stocks = []
     for row in rows:
-        stock_info = lookup(row['symbol'])
-        print(row)
+        stocks.append(row)
+    print(stocks)
 
-        # create a list with all the info about the transaction and append it to a list of every stock transaction
-        transactions.append(list(
-            (stock_info['symbol'], stock_info['name'], row['amount'], row['value'], row['date'])))
-    print(transactions)
-
-    # redirect user to index page
-    return render_template("history.html", transactions=transactions)
+    return render_template("wishlisted.html", stocks=stocks)
 
 
 def errorhandler(e):
