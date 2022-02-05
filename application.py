@@ -104,9 +104,10 @@ def buy():  # This function handles a form which user needs to buy and handles t
     if request.method == "GET":
         return render_template("buy.html")
     else:
-        symbol = lookup(request.form.get("symbol"))['symbol']
-        if not symbol:
+        symbol = lookup(request.form.get("symbol"))
+        if symbol is None:
             return apology("Not a valid symbol")
+        symbol = lookup(request.form.get("symbol"))['symbol']
         price = (lookup(symbol)['price'])
         amount = int(request.form.get("shares"))
         cash = db.engine.execute(
